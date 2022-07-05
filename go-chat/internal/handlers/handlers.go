@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
 	"net/http"
+	"sort"
 
 	"github.com/CloudyKit/jet/v6"
 	"github.com/gorilla/websocket"
@@ -42,9 +42,10 @@ var upgradeConnection = websocket.Upgrader{
 
 // define the response sent back from websocket
 type WsJsonResponse struct {
-	Action      string `json:"action"`
-	Message     string `json"message"`
-	MessageType string `json"message_type"`
+	Action         string   `json:"action"`
+	Message        string   `json"message"`
+	MessageType    string   `json"message_type"`
+	ConnectedUsers []string `json:"connected_users"`
 }
 
 type WebSocketConection struct {
@@ -112,9 +113,19 @@ func ListenToWSChannel() {
 	var response WsJsonResponse
 
 	for e := range wsChan {
-		response.Action = "Got here"
-		response.Message = fmt.Sprintf("Some message, and action was %s", e.Action)
-		broadcastToAll(response)
+
+		switch e.Action {
+		case "username":
+			// get a list of all users and send it back via broadcast
+			clients[e.Conn] = e.UserName
+			log.Println(e.UserName)
+			response.Action = "list_users"
+			response.ConnectedUsers = getUserList()
+			broadcastToAll(response)
+		}
+		// response.Action = "Got here"
+		// response.Message = fmt.Sprintf("Some message, and action was %s", e.Action)
+		// broadcastToAll(response)
 	}
 }
 
@@ -122,9 +133,17 @@ func broadcastToAll(response WsJsonResponse) {
 	for client := range clients {
 		err := client.WriteJSON(response)
 		if err != nil {
-			log.Println("websocket error: client might not be connected")
+			log.Println("websocket error: client is not connected")
 			_ = client.Close()
 			delete(clients, client)
 		}
 	}
+}
+
+func getUserList() (userList []string) {
+	for _, user := range clients {
+		userList = append(userList, user)
+	}
+	sort.Strings(userList)
+	return userList
 }
