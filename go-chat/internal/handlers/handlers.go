@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"sort"
@@ -43,8 +44,8 @@ var upgradeConnection = websocket.Upgrader{
 // define the response sent back from websocket
 type WsJsonResponse struct {
 	Action         string   `json:"action"`
-	Message        string   `json"message"`
-	MessageType    string   `json"message_type"`
+	Message        string   `json:"message"`
+	MessageType    string   `json:"message_type"`
 	ConnectedUsers []string `json:"connected_users"`
 }
 
@@ -55,7 +56,7 @@ type WebSocketConection struct {
 type WsPayload struct {
 	Action   string             `json:"action"`
 	UserName string             `json:"username"`
-	Message  string             `json"message"`
+	Message  string             `json:"message"`
 	Conn     WebSocketConection `json:"-"`
 }
 
@@ -127,6 +128,11 @@ func ListenToWSChannel() {
 			response.Action = "list_users"
 			delete(clients, e.Conn)
 			response.ConnectedUsers = getUserList()
+			broadcastToAll(response)
+
+		case "broadcast":
+			response.Action = "broadcast"
+			response.Message = fmt.Sprintf("<strong>%s</strong>: %s", e.UserName, e.Message)
 			broadcastToAll(response)
 		}
 	}
