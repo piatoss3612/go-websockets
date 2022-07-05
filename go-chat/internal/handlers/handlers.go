@@ -102,6 +102,7 @@ func ListenForWS(conn *WebSocketConection) {
 		err := conn.ReadJSON(&payload)
 		if err != nil {
 			// do nothing
+			break // "Error: repeated read on failed websocket connection" not logged
 		} else {
 			payload.Conn = *conn
 			wsChan <- payload
@@ -118,14 +119,16 @@ func ListenToWSChannel() {
 		case "username":
 			// get a list of all users and send it back via broadcast
 			clients[e.Conn] = e.UserName
-			log.Println(e.UserName)
 			response.Action = "list_users"
 			response.ConnectedUsers = getUserList()
 			broadcastToAll(response)
+
+		case "left":
+			response.Action = "list_users"
+			delete(clients, e.Conn)
+			response.ConnectedUsers = getUserList()
+			broadcastToAll(response)
 		}
-		// response.Action = "Got here"
-		// response.Message = fmt.Sprintf("Some message, and action was %s", e.Action)
-		// broadcastToAll(response)
 	}
 }
 
@@ -142,7 +145,9 @@ func broadcastToAll(response WsJsonResponse) {
 
 func getUserList() (userList []string) {
 	for _, user := range clients {
-		userList = append(userList, user)
+		if user != "" {
+			userList = append(userList, user)
+		}
 	}
 	sort.Strings(userList)
 	return userList

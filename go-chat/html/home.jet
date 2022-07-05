@@ -27,6 +27,7 @@
     <div class="row">
         <div class="col-md-8">
             <h3>Chat</h3>
+            <p><a href="https://github.com/piatoss3612/go-websockets">Go to github</a></p>
 
             <div class="form-group">
                 <label for="username">Username:</label>
@@ -63,11 +64,19 @@
 <script>
     let socket = null;
 
+    window.onbeforeunload = () => {
+      console.log("Leaving page");
+      let jsonData = {};
+      jsonData["action"] = "left";
+      socket.send(JSON.stringify(jsonData));
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         socket = new WebSocket("ws://127.0.0.1:8080/ws");
 
         socket.onopen = () => {
             console.log("Successfully connected");
+            //socket.send(JSON.stringify({"action": "enter"}));
         }
 
         socket.onclose = () => {
