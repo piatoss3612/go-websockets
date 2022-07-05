@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -57,6 +58,11 @@ type WsPayload struct {
 	Conn     WebSocketConection `json:"-"`
 }
 
+var (
+	wsChan  = make(chan WsPayload)
+	clients = make(map[WebSocketConection]string)
+)
+
 // upgrade connection to websocket
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgradeConnection.Upgrade(w, r, nil)
@@ -69,8 +75,56 @@ func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	var response WsJsonResponse
 	response.Message = `<em><small>Connected to server</small></em>`
 
+	conn := WebSocketConection{
+		Conn: ws,
+	}
+	clients[conn] = ""
+
 	err = ws.WriteJSON(response)
 	if err != nil {
 		log.Println(err)
+	}
+
+	go ListenForWS(&conn)
+}
+
+func ListenForWS(conn *WebSocketConection) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Error:", r)
+		}
+	}()
+
+	var payload WsPayload
+
+	for {
+		err := conn.ReadJSON(&payload)
+		if err != nil {
+			// do nothing
+		} else {
+			payload.Conn = *conn
+			wsChan <- payload
+		}
+	}
+}
+
+func ListenToWSChannel() {
+	var response WsJsonResponse
+
+	for e := range wsChan {
+		response.Action = "Got here"
+		response.Message = fmt.Sprintf("Some message, and action was %s", e.Action)
+		broadcastToAll(response)
+	}
+}
+
+func broadcastToAll(response WsJsonResponse) {
+	for client := range clients {
+		err := client.WriteJSON(response)
+		if err != nil {
+			log.Println("websocket error: client might not be connected")
+			_ = client.Close()
+			delete(clients, client)
+		}
 	}
 }
