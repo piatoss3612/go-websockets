@@ -92,7 +92,6 @@
         socket.onopen = () => {
             console.log("Successfully connected");
             statusDiv.innerHTML = onlineStatus;
-            //socket.send(JSON.stringify({"action": "enter"}));
         }
 
         socket.onclose = () => {
@@ -111,20 +110,21 @@
 
             switch (data.action) {
               case "list_users":
-                const ul = document.getElementById("online_users");
-                while (ul.firstChild) ul.removeChild(ul.firstChild);
-
-                if (data.connected_users.length > 0) {
-                  data.connected_users.forEach(item => {
-                    let li = document.createElement("li");
-                    li.appendChild(document.createTextNode(item));
-                    ul.appendChild(li);
-                  })
+                if (data.connected_users) {
+                  listUsers(data.connected_users);
                 }
                 break;
               
               case "broadcast":
                 chatbox.innerHTML += data.message + "<br>";
+                break;
+
+              case "enter":
+                if (data.connected_users) {
+                  listUsers(data.connected_users);
+                }
+                showMessage(data.message);
+                break;
             }
         }
 
@@ -135,7 +135,8 @@
           socket.send(JSON.stringify(jsonData));
         });
 
-        messageField.addEventListener("keydown", (evt) => {
+        // issue: keydown makes the error alert to disappear too quickly which is called in validation function
+        messageField.addEventListener("keyup", (evt) => {
           if (evt.code === "Enter") {
             if (validation()) {
               evt.preventDefault();
@@ -151,6 +152,19 @@
           }
         });
     })
+
+    const listUsers = (users) => {
+      const ul = document.getElementById("online_users");
+      while (ul.firstChild) ul.removeChild(ul.firstChild);
+
+      if (users.length > 0) {
+        users.forEach(item => {
+          let li = document.createElement("li");
+          li.appendChild(document.createTextNode(item));
+          ul.appendChild(li);
+        })
+      }
+    };
 
     const sendMessage = () => {
       let jsonData = {};
@@ -173,6 +187,13 @@
       }
     
       return true
+    };
+
+    const showMessage = (msg) => {
+      notie.alert({
+        type: 'info',
+        text: msg,
+      })
     };
 
     const showError = (msg) => {

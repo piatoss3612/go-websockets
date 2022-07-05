@@ -13,7 +13,6 @@ func main() {
 	go handlers.ListenToWSChannel()
 
 	log.Println("Starting web server on port 8080")
-
 	if err := http.ListenAndServe(":8080", routes); err != nil {
 		log.Panic(err)
 	}
