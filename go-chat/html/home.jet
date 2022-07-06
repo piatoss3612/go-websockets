@@ -86,7 +86,7 @@
 
         const offlineStatus = `<span class="badge bg-danger">Disconnected</span>`;
         const onlineStatus = `<span class="badge bg-success">Connected</span>`;
-        const errorStatus = `<span class="badge bg-success">Error</span>`;
+        const errorStatus = `<span class="badge bg-danger">Error</span>`;
         const statusDiv = document.getElementById("status");
 
         socket.onopen = () => {
