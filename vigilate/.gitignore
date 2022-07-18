@@ -1,0 +1,9 @@
+.idea
+soda_binaries
+run.sh.example
+database.yml
+run.bat
+schema.sql
+run.sh
+vigilate.exe
+.DS_Store
